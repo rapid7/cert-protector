@@ -1,0 +1,9 @@
+---
+openssl:
+  password:
+  keypath:
+codesign:
+  password:
+  keypath:
+gpg:
+  password:
