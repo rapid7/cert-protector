@@ -16,8 +16,6 @@ class CertProtector < Sinatra::Base
   attr_accessor :outfile
   # The yaml variable containing all configuration needed for execution
   attr_accessor :config
-  # The string variable containing the command to execute
-  attr_accessor :command
   # The password required to execute a given command
   attr_accessor :password
   # The string password or passphrase prompt
@@ -41,30 +39,27 @@ class CertProtector < Sinatra::Base
     case action
     when "gpg"
       do_setup
-      @command  = " gpg --armor --output #{outfile} --detach-sig #{infile}"
       @password = config['gpg']['password']
-      @prompt   = "Enter passphrase"
-      run!
+      @prompt   = "Enter passphrase:"
+      run("gpg --armor --output #{outfile} --detach-sig #{infile}")
     when "openssl"
       do_setup
-      @command  = "openssl dgst -sha256 -sign #{config['openssl']['keypath']} -out #{outfile} #{infile}"
       @password = config['openssl']['password']
-      @prompt   = "Enter pass phrase for"
-      run!
+      @prompt   = "Enter pass phrase for (.*):"
+      run("openssl dgst -sha256 -sign #{config['openssl']['keypath']} -out #{outfile} #{infile}")
     when "codesign"
       do_setup
-      @command  = "osslsigncode -askpass -pkcs12 #{config['codesign']['keypath']} -t http://timestamp.verisign.com/scripts/timstamp.dll -in #{infile} -out #{outfile}"
       @password = config['codesign']['password']
       @prompt   = "Password:"
-      run!
+      run("osslsigncode -askpass -pkcs12 #{config['codesign']['keypath']} -t http://timestamp.verisign.com/scripts/timstamp.dll -in #{infile} -out #{outfile}")
     else
       ''
     end
   end
 
   # Runs the command for the associated target and pushes the file back to the requestor
-  def run!
-    run_system_cmd
+  def run(command)
+    run_system_cmd(command)
     push_file
   end
 
@@ -89,7 +84,7 @@ class CertProtector < Sinatra::Base
   end
 
   # Runs the provided system command, waits for a prompt then enters a password or passphrase at the prompt
-  def run_system_cmd
+  def run_system_cmd(command)
     PTY.spawn(command) do |reader, writer|
       reader.expect(/#{prompt}/, 5)
       writer.puts(password)
