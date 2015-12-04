@@ -36,7 +36,7 @@ class CertProtector < Sinatra::Base
   put '/sign/gpg' do
     @password = config['gpg']['password']
     @prompt   = "Enter passphrase:"
-    run("gpg --armor --output #{outfile} --detach-sig #{infile}")
+    run("gpg --armor --local-user #{config['gpg']['key']} --output #{outfile} --detach-sig #{infile}")
   end
 
   put '/sign/openssl' do
