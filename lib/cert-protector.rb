@@ -1,11 +1,9 @@
-require 'sinatra'
-require 'openssl'
-require 'gpgme'
-require 'fileutils'
+require 'sinatra/base'
 require 'digest'
 require 'yaml'
 require 'expect'
 require 'pty'
+require 'timeout'
 
 class CertProtector < Sinatra::Base
   # Setup a logger
@@ -20,9 +18,14 @@ class CertProtector < Sinatra::Base
   attr_accessor :password
   # The string password or passphrase prompt
   attr_accessor :prompt
-
+  # The action to perform
+  attr_accessor :action
   before do
-    load_config
+    # Load the configuration
+    @config = YAML.load_file('config/config.yml')
+    # Create temp files
+    @infile = generate_filename
+    @outfile = generate_filename
   end
 
   not_found do
@@ -30,86 +33,80 @@ class CertProtector < Sinatra::Base
     ''
   end
 
-  get '/' do
-    ''
+  put '/sign/gpg' do
+    @password = config['gpg']['password']
+    @prompt   = "Enter passphrase:"
+    run("gpg --armor --output #{outfile} --detach-sig #{infile}")
   end
 
-  put '/:sign_type' do
-    action = params[:sign_type]
-    case action
-    when "gpg"
-      do_setup
-      @password = config['gpg']['password']
-      @prompt   = "Enter passphrase:"
-      run("gpg --armor --output #{outfile} --detach-sig #{infile}")
-    when "openssl"
-      do_setup
-      @password = config['openssl']['password']
-      @prompt   = "Enter pass phrase for (.*):"
-      run("openssl dgst -sha256 -sign #{config['openssl']['keypath']} -out #{outfile} #{infile}")
-    when "codesign"
-      do_setup
-      @password = config['codesign']['password']
-      @prompt   = "Password:"
-      run("osslsigncode -askpass -pkcs12 #{config['codesign']['keypath']} -t http://timestamp.verisign.com/scripts/timstamp.dll -in #{infile} -out #{outfile}")
-    else
-      ''
-    end
+  put '/sign/openssl' do
+    @password = config['openssl']['password']
+    @prompt   = "Enter pass phrase for #{config['openssl']['keypath']}:"
+    run("openssl dgst -sha256 -sign #{config['openssl']['keypath']} -out #{outfile} #{infile}")
+  end
+
+  put '/sign/codesign' do
+    @password = config['codesign']['password']
+    @prompt   = "Password:"
+    run("osslsigncode -askpass -pkcs12 #{config['codesign']['keypath']} -t http://timestamp.verisign.com/scripts/timstamp.dll -in #{infile} -out #{outfile}")
   end
 
   # Runs the command for the associated target and pushes the file back to the requestor
+  # +command+:: command to execute
   def run(command)
-    run_system_cmd(command)
-    push_file
-  end
-
-  # Handles the uploaded file and generates an outfile name
-  def do_setup
-    process_upload
-    @outfile = generate_filename
+    begin
+      @action = command.split(' ').first
+      logger.info("[#{action}] Receiving upload file...")
+      write_file
+      logger.info("[#{action}] Received upload file with SHA256: #{generate_digest(infile)}")
+      run_system_cmd(command)
+      logger.info("[#{action}] Sending processed file with SHA256: #{generate_digest(outfile)}")
+      push_file
+    rescue
+      cleanup
+    end
   end
 
   # Pushes a file back to the requestor after processing
   def push_file
-    logger.info("Sending #{params[:sign_type]} file with SHA256: #{generate_digest(outfile)}")
-    content = File.read(outfile)
+    return_content = File.read(outfile)
     cleanup
-    content
+    return_content
   end
 
   # Removes the input and output files on the system
   def cleanup
-    File.delete(outfile)
-    File.delete(infile)
+    File.delete(outfile) if File.exist?(outfile)
+    File.delete(infile) if File.exist?(infile)
   end
 
   # Runs the provided system command, waits for a prompt then enters a password or passphrase at the prompt
+  # +command+:: command to execute
   def run_system_cmd(command)
-    PTY.spawn(command) do |reader, writer|
-      reader.expect(/#{prompt}/, 5)
-      writer.puts(password)
+    begin
+      Timeout.timeout(config['app']['timeout']) do
+        PTY.spawn(command) do |reader, writer, pid|
+          begin
+            reader.expect(/#{prompt}/, 5)
+            writer.puts(password)
+            reader.read() while !reader.eof?
+          ensure
+            reader.close()
+            writer.close()
+            Process.wait(pid, Process::WNOHANG)
+          end
+        end
+      end
+    rescue Timeout::Error
+      logger.info("[#{action}] Timed out during execution of command!")
     end
-    sleep(5) # let command finish
-  end
-
-  # Load the yaml config with required properties
-  def load_config
-    @config = YAML.load_file('config/config.yml')
-  end
-
-  # Generates a random file path for uploaded file and writes the file to disk
-  def process_upload
-    @infile = generate_filename
-    write_file
   end
 
   # Writes an uploaded file to disk
   def write_file
-    logger.info("Receiving #{params[:sign_type]} upload file...")
     File.open(infile, 'w+') do |file|
       file.write(request.body.read)
     end
-    logger.info("Received #{params[:sign_type]} upload file with SHA256: #{generate_digest(infile)}")
   end
 
   # Generates a 256 SHA for a provided file
