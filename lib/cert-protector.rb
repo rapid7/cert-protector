@@ -6,6 +6,11 @@ require 'pty'
 require 'timeout'
 
 class CertProtector < Sinatra::Base
+  # Setup basic auth to use the config file credentials
+  use Rack::Auth::Basic, "Protected Area" do |username, password|
+    username == YAML.load_file('config/config.yml')['auth']['username'] && password == YAML.load_file('config/config.yml')['auth']['password']
+  end
+
   # Setup a logger
   use Rack::Logger
   # The input file variable for an uploaded file name and path
@@ -20,6 +25,7 @@ class CertProtector < Sinatra::Base
   attr_accessor :prompt
   # The action to perform
   attr_accessor :action
+
   before do
     # Load the configuration
     @config = YAML.load_file('config/config.yml')

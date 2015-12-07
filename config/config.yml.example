@@ -10,3 +10,6 @@ gpg:
   key:
 app:
   timeout: 30
+auth:
+  username:
+  password:
