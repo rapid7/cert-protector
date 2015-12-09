@@ -7,3 +7,9 @@ codesign:
   keypath:
 gpg:
   password:
+  key:
+app:
+  timeout: 30
+auth:
+  username:
+  password:
