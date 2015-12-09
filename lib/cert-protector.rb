@@ -95,11 +95,13 @@ class CertProtector < Sinatra::Base
           begin
             reader.expect(/#{prompt}/, 5)
             writer.puts(password)
-            reader.read() while !reader.eof?
+            begin
+              reader.read() while !reader.eof?
+            rescue Errno::EIO => e
+              # Do nothing here: http://stackoverflow.com/a/10306463
+            end
           ensure
-            reader.close()
-            writer.close()
-            Process.wait(pid, Process::WNOHANG)
+            Process.wait(pid)
           end
         end
       end
