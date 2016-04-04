@@ -54,7 +54,7 @@ class CertProtector < Sinatra::Base
   put '/sign/codesign' do
     @password = config['codesign']['password']
     @prompt   = "Password:"
-    run("osslsigncode -askpass -pkcs12 #{config['codesign']['keypath']} -t http://timestamp.verisign.com/scripts/timstamp.dll -in #{infile} -out #{outfile}")
+    run("osslsigncode -askpass -h sha256 -pkcs12 #{config['codesign']['keypath']} -t http://timestamp.verisign.com/scripts/timstamp.dll -in #{infile} -out #{outfile}")
   end
 
   # Runs the command for the associated target and pushes the file back to the requestor
