@@ -45,6 +45,7 @@ object signing:
 - gpg examples: http://www.spywarewarrior.com/uiuc/gpg/gpg-com-4.htm#2-3
 
 #### TODO
+- Enable SSL so passwords are not sent in plain text
 - Provide authentication in a semi sane manner
 - Use GPGme / openssl ruby rather than shelling out
 - Provide some customization options (such as allowing alteration of
