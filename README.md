@@ -23,13 +23,13 @@ The api is intentionally simple.  More features may be added later.
 
 ```bash
 # To gpg sign:
-curl -v -o sample.file.sig  --upload-file ./sample.file http://127.0.0.1:9292/gpg
+curl -v -o sample.file.sig  --upload-file ./sample.file http://127.0.0.1:9292/sign/gpg
 
 # To openssl sign:
-curl -v -o sample.file.sig --upload-file ./sample.file http://127.0.0.1:9292/openssl
+curl -v -o sample.file.sig --upload-file ./sample.file http://127.0.0.1:9292/sign/openssl
 
 # To authenticode sign:
-curl -v -o ./signed_installer.exe  --upload-file ./installer.exe http://127.0.0.1:9292/codesign
+curl -v -o ./signed_installer.exe  --upload-file ./installer.exe http://127.0.0.1:9292/sign/codesign
 ```
 
 #### Dependencies:
