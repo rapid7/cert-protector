@@ -44,6 +44,10 @@ object signing:
 - authenticode examples: http://development.adaptris.net/users/lchan/blog/2013/06/07/signing-windows-installers-on-linux
 - gpg examples: http://www.spywarewarrior.com/uiuc/gpg/gpg-com-4.htm#2-3
 
+#### Maven
+
+For an easy way to sign files within the Maven lifecycle, use the [codesign-maven-plugin](https://github.com/rapid7/cert-protector/tree/master/codesign-maven-plugin).
+
 #### TODO
 - Use GPGme / openssl ruby rather than shelling out
 - Provide some customization options (such as allowing alteration of
