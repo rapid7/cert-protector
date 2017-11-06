@@ -15,6 +15,7 @@ codesign-maven-plugin:
     <plugin>
       <groupId>com.rapid7</groupId>
       <artifactId>codesign-maven-plugin</artifactId>
+      <version>0.1.0</version>
       <executions>
         <execution>
           <id>sign-installer</id>
