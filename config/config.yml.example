@@ -5,6 +5,7 @@ openssl:
 codesign:
   password:
   keypath:
+  timestamp:
 gpg:
   password:
   key:
