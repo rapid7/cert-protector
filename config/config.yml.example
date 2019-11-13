@@ -14,3 +14,10 @@ app:
 auth:
   username:
   password:
+productsign:
+  password:
+  keypath:
+  certs:
+    - cert00
+    - cert01
+    - cert02
