@@ -30,6 +30,9 @@ curl -v -o sample.file.sig --upload-file ./sample.file http://127.0.0.1:9292/sig
 
 # To authenticode sign:
 curl -v -o ./signed_installer.exe  --upload-file ./installer.exe http://127.0.0.1:9292/sign/codesign
+
+# To productsign:
+curl -v -o ./signed_installer.pkg  --upload-file ./installer.pkg http://127.0.0.1:9292/sign/productsign
 ```
 
 #### Dependencies:
@@ -38,6 +41,7 @@ object signing:
 - gpg (for gpg signatures)
 - osslsigncode (for authenticode signing)
 - openssl (for openssl signatures)
+- productsign (for macOS pkg signatures)
 
 #### Notes
 - openssl examples: http://stackoverflow.com/a/18359743
